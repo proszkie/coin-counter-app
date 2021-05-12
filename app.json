@@ -1,0 +1,12 @@
+{
+  "name": "coin-counter",
+  "displayName": "coin-counter",
+  "expo": {
+    "name": "coin-counter",
+    "slug": "coin-counter",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ]
+  }
+}
