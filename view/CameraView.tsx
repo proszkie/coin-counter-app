@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
-import { StyleSheet, Text, View, TouchableOpacity } from "react-native";
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  ActivityIndicator,
+} from "react-native";
 import { Camera } from "expo-camera";
 
 const CameraView = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const type = Camera.Constants.Type.back;
   const [camera, setCamera] = useState<Camera | null>(null);
+  const [isWaiting, setIsWaiting] = useState<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -25,18 +32,42 @@ const CameraView = () => {
       <Camera ref={(ref) => setCamera(ref)} style={styles.camera} type={type}>
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.button}
+            style={isWaiting ? [styles.button, styles.overlay] : styles.button}
             onPress={async () => {
-              let photo = await camera?.takePictureAsync({base64: true});
-              console.log(photo?.base64)
+              if (isWaiting) {
+                return;
+              }
+              setIsWaiting(true);
+              let photo = await camera?.takePictureAsync({ base64: true });
+              let response = await fetch("http://192.168.43.158:8080/", {
+                method: "POST",
+                headers: {
+                  Accept: "application/json",
+                  "Content-Type": "text/plain",
+                },
+                body: photo?.base64,
+              });
+              let data = (await response.json()) as ApiResponse;
+              setIsWaiting(false);
+              console.log("There is " + data.amount + " " + data.denomination);
             }}
           >
-            <Text style={styles.text}> Flip </Text>
+            <ActivityIndicator
+              style={styles.spinner}
+              animating={isWaiting}
+              color="#0000ff"
+              size={100}
+            />
           </TouchableOpacity>
         </View>
       </Camera>
     </View>
   );
+};
+
+type ApiResponse = {
+  amount: number;
+  denomination: string;
 };
 
 const styles = StyleSheet.create({
@@ -47,19 +78,18 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   buttonContainer: {
-    flex: 1,
     backgroundColor: "transparent",
     flexDirection: "row",
-    margin: 20,
+    flex: 1
   },
   button: {
-    flex: 0.1,
-    alignSelf: "flex-end",
     alignItems: "center",
+    justifyContent: "center",
+    padding: 200
   },
-  text: {
-    fontSize: 18,
-    color: "white",
+  spinner: {},
+  overlay: {
+    backgroundColor: "rgba(255, 255, 255, 0.5)"
   },
 });
 
