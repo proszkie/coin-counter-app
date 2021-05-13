@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Camera } from "expo-camera";
+import * as Speech from "expo-speech";
 
 const CameraView = () => {
   const [hasPermission, setHasPermission] = useState(false);
@@ -37,6 +38,7 @@ const CameraView = () => {
               if (isWaiting) {
                 return;
               }
+              Speech.speak("Gimme one moment, I'll calculate it...");
               setIsWaiting(true);
               let photo = await camera?.takePictureAsync({ base64: true });
               let response = await fetch("http://192.168.43.158:8080/", {
@@ -49,7 +51,7 @@ const CameraView = () => {
               });
               let data = (await response.json()) as ApiResponse;
               setIsWaiting(false);
-              console.log("There is " + data.amount + " " + data.denomination);
+              Speech.speak("There is " + data.amount + " " + data.denomination);
             }}
           >
             <ActivityIndicator
@@ -80,16 +82,16 @@ const styles = StyleSheet.create({
   buttonContainer: {
     backgroundColor: "transparent",
     flexDirection: "row",
-    flex: 1
+    flex: 1,
   },
   button: {
     alignItems: "center",
     justifyContent: "center",
-    padding: 200
+    padding: 200,
   },
   spinner: {},
   overlay: {
-    backgroundColor: "rgba(255, 255, 255, 0.5)"
+    backgroundColor: "rgba(255, 255, 255, 0.5)",
   },
 });
 
