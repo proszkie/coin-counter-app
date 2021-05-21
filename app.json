@@ -5,6 +5,7 @@
     "name": "coin-counter",
     "slug": "coin-counter",
     "version": "1.0.0",
+    "orientation": "portrait",
     "assetBundlePatterns": [
       "**/*"
     ]

@@ -8,12 +8,25 @@ import {
 } from "react-native";
 import { Camera } from "expo-camera";
 import * as Speech from "expo-speech";
+import { Buffer } from "buffer";
+import { useWindowDimensions } from "react-native";
 
 const CameraView = () => {
   const [hasPermission, setHasPermission] = useState(false);
   const type = Camera.Constants.Type.back;
   const [camera, setCamera] = useState<Camera | null>(null);
   const [isWaiting, setIsWaiting] = useState<boolean>(false);
+
+  const SCREEN_WIDTH = useWindowDimensions().width;
+  const SCREEN_HEIGHT = useWindowDimensions().height;
+
+  function buttonStyle() {
+    return {
+      alignItems: "center",
+      justifyContent: "center",
+      width: SCREEN_WIDTH,
+    };
+  }
 
   useEffect(() => {
     (async () => {
@@ -28,12 +41,19 @@ const CameraView = () => {
   if (hasPermission === false) {
     return <Text>No access to camera</Text>;
   }
+
+  const height = Math.round((SCREEN_WIDTH * 16) / 9);
+
   return (
     <View style={styles.container}>
-      <Camera ref={(ref) => setCamera(ref)} style={styles.camera} type={type}>
+      <Camera ref={(ref) => setCamera(ref)} style={{height: height, width: "100%"}} ratio="16:9" type={type}>
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={isWaiting ? [styles.button, styles.overlay] : styles.button}
+            style={
+              isWaiting
+                ? [buttonStyle(), styles.overlay]
+                : [buttonStyle()]
+            }
             onPress={async () => {
               if (isWaiting) {
                 return;
@@ -41,17 +61,27 @@ const CameraView = () => {
               Speech.speak("Gimme one moment, I'll calculate it...");
               setIsWaiting(true);
               let photo = await camera?.takePictureAsync({ base64: true });
-              let response = await fetch("http://192.168.43.158:8080/", {
-                method: "POST",
-                headers: {
-                  Accept: "application/json",
-                  "Content-Type": "text/plain",
-                },
-                body: photo?.base64,
-              });
+              const base64: string = photo?.base64!;
+              let photo_as_bytes = Buffer.from(base64, "base64");
+              let response = await fetch(
+                "http://192.168.8.112:8080/anotation",
+                {
+                  method: "POST",
+                  headers: {
+                    Accept: "application/json",
+                    "Content-Type": "application/octet-stream",
+                  },
+                  body: photo_as_bytes,
+                }
+              );
               let data = (await response.json()) as ApiResponse;
               setIsWaiting(false);
-              Speech.speak("There is " + data.amount + " " + data.denomination);
+              console.log(data);
+              if (data.sum != 0) {
+                Speech.speak("There is " + data.sum + " " + data.denomination);
+              } else {
+                Speech.speak("No money was recognized");
+              }
             }}
           >
             <ActivityIndicator
@@ -68,7 +98,7 @@ const CameraView = () => {
 };
 
 type ApiResponse = {
-  amount: number;
+  sum: number;
   denomination: string;
 };
 
@@ -87,7 +117,6 @@ const styles = StyleSheet.create({
   button: {
     alignItems: "center",
     justifyContent: "center",
-    padding: 200,
   },
   spinner: {},
   overlay: {
